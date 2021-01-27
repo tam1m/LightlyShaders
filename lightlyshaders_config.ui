@@ -97,6 +97,20 @@
       </layout>
      </item>
      <item>
+      <widget class="QCheckBox" name="darkBorder">
+       <property name="text">
+        <string>Dark outer border (good for dark themes)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="inverseOutline">
+       <property name="text">
+        <string>Inverse outline color (good for light themes)</string>
+       </property>
+      </widget>
+     </item>     
+     <item>
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>

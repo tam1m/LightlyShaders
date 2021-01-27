@@ -52,8 +52,9 @@ private:
     enum { TopLeft = 0, TopRight, BottomRight, BottomLeft, NTex };
     KWin::GLTexture *m_tex[NTex];
     KWin::GLTexture *m_rect[NTex];
+    KWin::GLTexture *m_dark_rect[NTex];
     int m_size, m_rSize, m_alpha;
-    bool m_outline;
+    bool m_outline, m_dark_border, m_inverse_outline;
     QSize m_corner;
     QRegion m_updateRegion;
     KWin::GLShader *m_shader;

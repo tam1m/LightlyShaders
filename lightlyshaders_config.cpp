@@ -37,13 +37,17 @@ public:
         , roundness("roundness")
         , outline("outline")
         , alpha("alpha")
-        , defaultRoundness(6)
+        , darkBorder("dark_border")
+        , inverseOutline("inverse_outline")
+        , defaultRoundness(5)
         , defaultOutline(false)
-        , defaultAlpha(12)
+        , defaultAlpha(15)
+        , defaultDarkBorder(false)
+        , defaultInverseOutline(false)
     {}
     LightlyShadersConfig *q;
-    QString roundness, outline, alpha;
-    QVariant defaultRoundness, defaultOutline, defaultAlpha;
+    QString roundness, outline, alpha, darkBorder, inverseOutline;
+    QVariant defaultRoundness, defaultOutline, defaultAlpha, defaultDarkBorder, defaultInverseOutline;
     ConfigDialog *ui;
 };
 
@@ -69,6 +73,8 @@ LightlyShadersConfig::load()
     d->ui->roundness->setValue(conf.readEntry(d->roundness, d->defaultRoundness).toInt());
     d->ui->outline->setChecked(conf.readEntry(d->outline, d->defaultOutline).toBool());
     d->ui->alpha->setValue(conf.readEntry(d->alpha, d->defaultAlpha).toInt());
+    d->ui->darkBorder->setChecked(conf.readEntry(d->darkBorder, d->defaultDarkBorder).toBool());
+    d->ui->inverseOutline->setChecked(conf.readEntry(d->inverseOutline, d->defaultInverseOutline).toBool());
     emit changed(false);
 }
 
@@ -80,6 +86,8 @@ LightlyShadersConfig::save()
     conf.writeEntry(d->roundness, d->ui->roundness->value());
     conf.writeEntry(d->outline, d->ui->outline->isChecked());
     conf.writeEntry(d->alpha, d->ui->alpha->value());
+    conf.writeEntry(d->darkBorder, d->ui->darkBorder->isChecked());
+    conf.writeEntry(d->inverseOutline, d->ui->inverseOutline->isChecked());
     conf.sync();
     emit changed(false);
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
@@ -95,6 +103,8 @@ LightlyShadersConfig::defaults()
     d->ui->roundness->setValue(d->defaultRoundness.toInt());
     d->ui->outline->setChecked(d->defaultOutline.toBool());
     d->ui->alpha->setValue(d->defaultAlpha.toInt());
+    d->ui->darkBorder->setChecked(d->defaultDarkBorder.toBool());
+    d->ui->inverseOutline->setChecked(d->defaultInverseOutline.toBool());
     emit changed(true);
 }
 

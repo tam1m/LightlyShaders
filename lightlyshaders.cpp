@@ -46,6 +46,7 @@ LightlyShadersEffect::LightlyShadersEffect() : KWin::Effect(), m_shader(0)
     {
         m_tex[i] = 0;
         m_rect[i] = 0;
+        m_dark_rect[i] = 0;
     }
     reconfigure(ReconfigureAll);
 
@@ -102,6 +103,8 @@ LightlyShadersEffect::~LightlyShadersEffect()
             delete m_tex[i];
         if (m_rect[i])
             delete m_rect[i];
+        if (m_dark_rect[i])
+            delete m_dark_rect[i];
     }
 }
 
@@ -144,25 +147,27 @@ LightlyShadersEffect::genMasks()
 void
 LightlyShadersEffect::genRect()
 {
-    for (int i = 0; i < NTex; ++i)
+    for (int i = 0; i < NTex; ++i) {
         if (m_rect[i])
             delete m_rect[i];
+        if (m_dark_rect[i])
+            delete m_dark_rect[i];
+    }
 
     m_rSize = m_size+1;
+
     QImage img(m_rSize*2, m_rSize*2, QImage::Format_ARGB32_Premultiplied);
     img.fill(Qt::transparent);
     QPainter p(&img);
     QRect r(img.rect());
     p.setPen(Qt::NoPen);
-    //p.setBrush(QColor(0, 0, 0, m_alpha));
     p.setRenderHint(QPainter::Antialiasing);
-    //p.drawEllipse(r);
-    //p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
-    //p.setBrush(Qt::black);
     r.adjust(1, 1, -1, -1);
-    //p.drawEllipse(r);
-    //p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    p.setBrush(QColor(255, 255, 255, m_alpha));
+    if(m_dark_border) {
+        p.setBrush(QColor(255, 255, 255, (m_alpha*2 < 255) ? m_alpha*2 : 255)) ;
+    } else {
+        p.setBrush(QColor(255, 255, 255, m_alpha));
+    }
     p.drawEllipse(r);
     p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
     p.setBrush(Qt::black);
@@ -174,6 +179,26 @@ LightlyShadersEffect::genRect()
     m_rect[TopRight] = new KWin::GLTexture(img.copy(m_rSize, 0, m_rSize, m_rSize));
     m_rect[BottomRight] = new KWin::GLTexture(img.copy(m_rSize, m_rSize, m_rSize, m_rSize));
     m_rect[BottomLeft] = new KWin::GLTexture(img.copy(0, m_rSize, m_rSize, m_rSize));
+
+    QImage img2(m_rSize*2, m_rSize*2, QImage::Format_ARGB32_Premultiplied);
+    img2.fill(Qt::transparent);
+    QPainter p2(&img2);
+    QRect r2(img2.rect());
+    p2.setPen(Qt::NoPen);
+    p2.setRenderHint(QPainter::Antialiasing);
+    r2.adjust(1, 1, -1, -1);
+    p2.setBrush(QColor(0, 0, 0, 255));
+    p2.drawEllipse(r2);
+    p2.setCompositionMode(QPainter::CompositionMode_DestinationOut);
+    p2.setBrush(Qt::black);
+    r2.adjust(1, 1, -1, -1);
+    p2.drawEllipse(r2);
+    p2.end();
+
+    m_dark_rect[TopLeft] = new KWin::GLTexture(img2.copy(0, 0, m_rSize, m_rSize));
+    m_dark_rect[TopRight] = new KWin::GLTexture(img2.copy(m_rSize, 0, m_rSize, m_rSize));
+    m_dark_rect[BottomRight] = new KWin::GLTexture(img2.copy(m_rSize, m_rSize, m_rSize, m_rSize));
+    m_dark_rect[BottomLeft] = new KWin::GLTexture(img2.copy(0, m_rSize, m_rSize, m_rSize));
 }
 
 void
@@ -190,9 +215,11 @@ LightlyShadersEffect::reconfigure(ReconfigureFlags flags)
 {
     Q_UNUSED(flags)
     KConfigGroup conf = KSharedConfig::openConfig("lightlyshaders.conf")->group("General");
-    m_alpha = int(conf.readEntry("alpha", 12)*2.55);
+    m_alpha = int(conf.readEntry("alpha", 15)*2.55);
     setRoundness(conf.readEntry("roundness", 5));
     m_outline = conf.readEntry("outline", false);
+    m_dark_border = conf.readEntry("dark_border", false);
+    m_inverse_outline = conf.readEntry("inverse_outline", false);
 }
 
 void
@@ -315,9 +342,15 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
             rect[3].adjusted(-1, 0, 0, 1)
         };
         const float o(data.opacity());
+
         KWin::GLShader *shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::MapTexture|KWin::ShaderTrait::UniformColor|KWin::ShaderTrait::Modulate);
-        shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+        //Inner corners
+        shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
+        if(m_inverse_outline) {
+            glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+        }
         for (int i = 0; i < NTex; ++i)
         {
             QMatrix4x4 modelViewProjection;
@@ -328,17 +361,65 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
             m_rect[i]->render(region, rrect[i]);
             m_rect[i]->unbind();
         }
+        if(m_inverse_outline) {
+            glBlendEquation(GL_FUNC_ADD);
+        }
         KWin::ShaderManager::instance()->popShader();
+
+        //Outer corners
+        if(m_dark_border) {
+            const QRect nrect[NTex] =
+            {
+                rect[0].adjusted(-2, -2, 0, 0),
+                rect[1].adjusted(0, -2, 2, 0),
+                rect[2].adjusted(0, 0, 2, 2),
+                rect[3].adjusted(-2, 0, 0, 2)
+            };
+            shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::MapTexture|KWin::ShaderTrait::UniformColor|KWin::ShaderTrait::Modulate);
+            shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
+            for (int i = 0; i < NTex; ++i)
+            {
+                QMatrix4x4 modelViewProjection;
+                modelViewProjection.ortho(0, s.width(), s.height(), 0, 0, 65535);
+                modelViewProjection.translate(nrect[i].x(), nrect[i].y());
+                shader->setUniform("modelViewProjectionMatrix", modelViewProjection);
+
+                m_dark_rect[i]->bind();
+                m_dark_rect[i]->render(region, nrect[i]);
+                m_dark_rect[i]->unbind();
+            
+            }
+            KWin::ShaderManager::instance()->popShader();
+        }
         
+        QRegion reg = geo;
+
+        //Outline
         shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::UniformColor);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        QRegion reg = geo;
         reg -= QRegion(geo.adjusted(1, 1, -1, -1));
         for (int i = 0; i < 4; ++i)
             reg -= rrect[i];
-        fillRegion(reg, QColor(255, 255, 255, m_alpha*data.opacity()));
-        
+        if(m_inverse_outline) {
+            fillRegion(reg, QColor(0, 0, 0, m_alpha*data.opacity())); 
+        } else {
+            fillRegion(reg, QColor(255, 255, 255, m_alpha*data.opacity())); 
+        }
         KWin::ShaderManager::instance()->popShader();
+
+        //Borderline
+        if(m_dark_border) {
+            shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::UniformColor);
+            reg = QRegion(geo.adjusted(-1, -1, 1, 1));
+            reg -= geo;
+            for (int i = 0; i < 4; ++i)
+                reg -= rrect[i];
+
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            fillRegion(reg, QColor(0, 0, 0, 255*data.opacity()));
+
+            KWin::ShaderManager::instance()->popShader();
+        }
     }
 
     glDisable(GL_BLEND);

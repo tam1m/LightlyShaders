@@ -1,5 +1,9 @@
- ![default](https://github.com/Luwx/LightlyShaders/blob/master/screenshot.png)
- This is a fork of [ShapeCorners](https://sourceforge.net/projects/shapecorners/) that additionally implements an outline around the window.
+ ![default](https://github.com/a-parhom/LightlyShaders/blob/master/screenshot.png)
+ This is a fork of Luwx's LightlyShaders (https://github.com/Luwx/LightlyShaders), which in turn is a fork of [ShapeCorners](https://sourceforge.net/projects/shapecorners/). 
+
+ This fork additionally implements two options:
+ - an option to invert the color of the outline around the window; 
+ - an option to add a dark outer border.
  
  # Dependencies:
  
@@ -16,7 +20,7 @@ sudo dnf install git cmake gcc-c++ extra-cmake-modules qt5-qttools-devel qt5-qtt
 
 # Manual instalation
 ```
-git clone https://github.com/Luwx/LightlyShaders
+git clone https://github.com/a-parhom/LightlyShaders
 
 cd LightlyShaders; mkdir qt5build; cd qt5build; cmake ../ -DCMAKE_INSTALL_PREFIX=/usr -DQT5BUILD=ON && make && sudo make install && (kwin_x11 --replace &)
 ```
