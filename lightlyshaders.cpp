@@ -222,6 +222,41 @@ LightlyShadersEffect::reconfigure(ReconfigureFlags flags)
     m_inverse_outline = conf.readEntry("inverse_outline", false);
 }
 
+#if KWIN_EFFECT_API_VERSION >= 232
+
+void
+LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaintData &data, std::chrono::milliseconds time)
+{
+    if (!m_shader->isValid()
+            || !m_managed.contains(w)
+            || !w->isPaintingEnabled()
+//            || KWin::effects->hasActiveFullScreenEffect()
+            || w->isDesktop()
+            || data.quads.isTransformed())
+    {
+        KWin::effects->prePaintWindow(w, data, time);
+        return;
+    }
+    const QRect geo(w->geometry());
+    const QRect rect[NTex] =
+    {
+        QRect(geo.topLeft(), m_corner),
+        QRect(geo.topRight()-QPoint(m_size-1, 0), m_corner),
+        QRect(geo.bottomRight()-QPoint(m_size-1, m_size-1), m_corner),
+        QRect(geo.bottomLeft()-QPoint(0, m_size-1), m_corner)
+    };
+    for (int i = 0; i < NTex; ++i)
+    {
+        data.paint += rect[i];
+        data.clip -= rect[i];
+    }
+    QRegion outerRect(QRegion(geo.adjusted(-1, -1, 1, 1))-geo.adjusted(1, 1, -1, -1));
+    //outerRect += QRegion(geo.x()+m_size, geo.y(), geo.width()-m_size*2, 1);
+    data.paint += outerRect;
+    data.clip -=outerRect;
+    KWin::effects->prePaintWindow(w, data, time);
+}
+#else
 void
 LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaintData &data, int time)
 {
@@ -254,6 +289,7 @@ LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaint
     data.clip -=outerRect;
     KWin::effects->prePaintWindow(w, data, time);
 }
+#endif
 
 static bool hasShadow(KWin::WindowQuadList &qds)
 {
