@@ -37,17 +37,15 @@ public:
         , roundness("roundness")
         , outline("outline")
         , alpha("alpha")
-        , darkBorder("dark_border")
-        , inverseOutline("inverse_outline")
+        , darkTheme("dark_theme")
         , defaultRoundness(5)
         , defaultOutline(false)
         , defaultAlpha(15)
-        , defaultDarkBorder(false)
-        , defaultInverseOutline(false)
+        , defaultDarkTheme(false)
     {}
     LightlyShadersConfig *q;
-    QString roundness, outline, alpha, darkBorder, inverseOutline;
-    QVariant defaultRoundness, defaultOutline, defaultAlpha, defaultDarkBorder, defaultInverseOutline;
+    QString roundness, outline, alpha, darkTheme;
+    QVariant defaultRoundness, defaultOutline, defaultAlpha, defaultDarkTheme;
     ConfigDialog *ui;
 };
 
@@ -73,8 +71,7 @@ LightlyShadersConfig::load()
     d->ui->roundness->setValue(conf.readEntry(d->roundness, d->defaultRoundness).toInt());
     d->ui->outline->setChecked(conf.readEntry(d->outline, d->defaultOutline).toBool());
     d->ui->alpha->setValue(conf.readEntry(d->alpha, d->defaultAlpha).toInt());
-    d->ui->darkBorder->setChecked(conf.readEntry(d->darkBorder, d->defaultDarkBorder).toBool());
-    d->ui->inverseOutline->setChecked(conf.readEntry(d->inverseOutline, d->defaultInverseOutline).toBool());
+    d->ui->darkTheme->setChecked(conf.readEntry(d->darkTheme, d->defaultDarkTheme).toBool());
     emit changed(false);
 }
 
@@ -86,8 +83,7 @@ LightlyShadersConfig::save()
     conf.writeEntry(d->roundness, d->ui->roundness->value());
     conf.writeEntry(d->outline, d->ui->outline->isChecked());
     conf.writeEntry(d->alpha, d->ui->alpha->value());
-    conf.writeEntry(d->darkBorder, d->ui->darkBorder->isChecked());
-    conf.writeEntry(d->inverseOutline, d->ui->inverseOutline->isChecked());
+    conf.writeEntry(d->darkTheme, d->ui->darkTheme->isChecked());
     conf.sync();
     emit changed(false);
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
@@ -103,8 +99,7 @@ LightlyShadersConfig::defaults()
     d->ui->roundness->setValue(d->defaultRoundness.toInt());
     d->ui->outline->setChecked(d->defaultOutline.toBool());
     d->ui->alpha->setValue(d->defaultAlpha.toInt());
-    d->ui->darkBorder->setChecked(d->defaultDarkBorder.toBool());
-    d->ui->inverseOutline->setChecked(d->defaultInverseOutline.toBool());
+    d->ui->darkTheme->setChecked(d->defaultDarkTheme.toBool());
     emit changed(true);
 }
 

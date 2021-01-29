@@ -163,7 +163,7 @@ LightlyShadersEffect::genRect()
     p.setPen(Qt::NoPen);
     p.setRenderHint(QPainter::Antialiasing);
     r.adjust(1, 1, -1, -1);
-    if(m_dark_border) {
+    if(m_dark_theme) {
         p.setBrush(QColor(255, 255, 255, (m_alpha*2 < 255) ? m_alpha*2 : 255)) ;
     } else {
         p.setBrush(QColor(255, 255, 255, m_alpha));
@@ -187,7 +187,11 @@ LightlyShadersEffect::genRect()
     p2.setPen(Qt::NoPen);
     p2.setRenderHint(QPainter::Antialiasing);
     r2.adjust(1, 1, -1, -1);
-    p2.setBrush(QColor(0, 0, 0, 255));
+    if(m_dark_theme) {
+        p2.setBrush(QColor(0, 0, 0, 255));
+    } else {
+        p2.setBrush(QColor(0, 0, 0, (m_alpha*2 < 255) ? m_alpha*2 : 255));
+    }
     p2.drawEllipse(r2);
     p2.setCompositionMode(QPainter::CompositionMode_DestinationOut);
     p2.setBrush(Qt::black);
@@ -218,47 +222,15 @@ LightlyShadersEffect::reconfigure(ReconfigureFlags flags)
     m_alpha = int(conf.readEntry("alpha", 15)*2.55);
     setRoundness(conf.readEntry("roundness", 5));
     m_outline = conf.readEntry("outline", false);
-    m_dark_border = conf.readEntry("dark_border", false);
-    m_inverse_outline = conf.readEntry("inverse_outline", false);
+    m_dark_theme = conf.readEntry("dark_theme", false);
 }
 
+void
 #if KWIN_EFFECT_API_VERSION >= 232
-
-void
 LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaintData &data, std::chrono::milliseconds time)
-{
-    if (!m_shader->isValid()
-            || !m_managed.contains(w)
-            || !w->isPaintingEnabled()
-//            || KWin::effects->hasActiveFullScreenEffect()
-            || w->isDesktop()
-            || data.quads.isTransformed())
-    {
-        KWin::effects->prePaintWindow(w, data, time);
-        return;
-    }
-    const QRect geo(w->geometry());
-    const QRect rect[NTex] =
-    {
-        QRect(geo.topLeft(), m_corner),
-        QRect(geo.topRight()-QPoint(m_size-1, 0), m_corner),
-        QRect(geo.bottomRight()-QPoint(m_size-1, m_size-1), m_corner),
-        QRect(geo.bottomLeft()-QPoint(0, m_size-1), m_corner)
-    };
-    for (int i = 0; i < NTex; ++i)
-    {
-        data.paint += rect[i];
-        data.clip -= rect[i];
-    }
-    QRegion outerRect(QRegion(geo.adjusted(-1, -1, 1, 1))-geo.adjusted(1, 1, -1, -1));
-    //outerRect += QRegion(geo.x()+m_size, geo.y(), geo.width()-m_size*2, 1);
-    data.paint += outerRect;
-    data.clip -=outerRect;
-    KWin::effects->prePaintWindow(w, data, time);
-}
 #else
-void
 LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaintData &data, int time)
+#endif
 {
     if (!m_shader->isValid()
             || !m_managed.contains(w)
@@ -289,7 +261,6 @@ LightlyShadersEffect::prePaintWindow(KWin::EffectWindow *w, KWin::WindowPrePaint
     data.clip -=outerRect;
     KWin::effects->prePaintWindow(w, data, time);
 }
-#endif
 
 static bool hasShadow(KWin::WindowQuadList &qds)
 {
@@ -384,9 +355,7 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
 
         //Inner corners
         shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
-        if(m_inverse_outline) {
-            glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-        }
+
         for (int i = 0; i < NTex; ++i)
         {
             QMatrix4x4 modelViewProjection;
@@ -397,36 +366,32 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
             m_rect[i]->render(region, rrect[i]);
             m_rect[i]->unbind();
         }
-        if(m_inverse_outline) {
-            glBlendEquation(GL_FUNC_ADD);
-        }
+
         KWin::ShaderManager::instance()->popShader();
 
         //Outer corners
-        if(m_dark_border) {
-            const QRect nrect[NTex] =
-            {
-                rect[0].adjusted(-2, -2, 0, 0),
-                rect[1].adjusted(0, -2, 2, 0),
-                rect[2].adjusted(0, 0, 2, 2),
-                rect[3].adjusted(-2, 0, 0, 2)
-            };
-            shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::MapTexture|KWin::ShaderTrait::UniformColor|KWin::ShaderTrait::Modulate);
-            shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
-            for (int i = 0; i < NTex; ++i)
-            {
-                QMatrix4x4 modelViewProjection;
-                modelViewProjection.ortho(0, s.width(), s.height(), 0, 0, 65535);
-                modelViewProjection.translate(nrect[i].x(), nrect[i].y());
-                shader->setUniform("modelViewProjectionMatrix", modelViewProjection);
+        const QRect nrect[NTex] =
+        {
+            rect[0].adjusted(-2, -2, 0, 0),
+            rect[1].adjusted(0, -2, 2, 0),
+            rect[2].adjusted(0, 0, 2, 2),
+            rect[3].adjusted(-2, 0, 0, 2)
+        };
+        shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::MapTexture|KWin::ShaderTrait::UniformColor|KWin::ShaderTrait::Modulate);
+        shader->setUniform(KWin::GLShader::ModulationConstant, QVector4D(o, o, o, o));
+        for (int i = 0; i < NTex; ++i)
+        {
+            QMatrix4x4 modelViewProjection;
+            modelViewProjection.ortho(0, s.width(), s.height(), 0, 0, 65535);
+            modelViewProjection.translate(nrect[i].x(), nrect[i].y());
+            shader->setUniform("modelViewProjectionMatrix", modelViewProjection);
 
-                m_dark_rect[i]->bind();
-                m_dark_rect[i]->render(region, nrect[i]);
-                m_dark_rect[i]->unbind();
-            
-            }
-            KWin::ShaderManager::instance()->popShader();
+            m_dark_rect[i]->bind();
+            m_dark_rect[i]->render(region, nrect[i]);
+            m_dark_rect[i]->unbind();
+        
         }
+        KWin::ShaderManager::instance()->popShader();
         
         QRegion reg = geo;
 
@@ -436,26 +401,23 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
         reg -= QRegion(geo.adjusted(1, 1, -1, -1));
         for (int i = 0; i < 4; ++i)
             reg -= rrect[i];
-        if(m_inverse_outline) {
-            fillRegion(reg, QColor(0, 0, 0, m_alpha*data.opacity())); 
-        } else {
-            fillRegion(reg, QColor(255, 255, 255, m_alpha*data.opacity())); 
-        }
+        fillRegion(reg, QColor(255, 255, 255, m_alpha*data.opacity()));
         KWin::ShaderManager::instance()->popShader();
 
         //Borderline
-        if(m_dark_border) {
-            shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::UniformColor);
-            reg = QRegion(geo.adjusted(-1, -1, 1, 1));
-            reg -= geo;
-            for (int i = 0; i < 4; ++i)
-                reg -= rrect[i];
+        shader = KWin::ShaderManager::instance()->pushShader(KWin::ShaderTrait::UniformColor);
+        reg = QRegion(geo.adjusted(-1, -1, 1, 1));
+        reg -= geo;
+        for (int i = 0; i < 4; ++i)
+            reg -= rrect[i];
 
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        if(m_dark_theme)
             fillRegion(reg, QColor(0, 0, 0, 255*data.opacity()));
+        else
+            fillRegion(reg, QColor(0, 0, 0, m_alpha*data.opacity()));
 
-            KWin::ShaderManager::instance()->popShader();
-        }
+        KWin::ShaderManager::instance()->popShader();
     }
 
     glDisable(GL_BLEND);

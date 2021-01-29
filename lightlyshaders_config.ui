@@ -97,16 +97,9 @@
       </layout>
      </item>
      <item>
-      <widget class="QCheckBox" name="darkBorder">
+      <widget class="QCheckBox" name="darkTheme">
        <property name="text">
-        <string>Dark outer border (good for dark themes)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="inverseOutline">
-       <property name="text">
-        <string>Inverse outline color (good for light themes)</string>
+        <string>Dark theme mode</string>
        </property>
       </widget>
      </item>     

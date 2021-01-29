@@ -41,7 +41,6 @@ public:
     void fillRegion(const QRegion &reg, const QColor &c);
 
     void reconfigure(ReconfigureFlags flags);
-//    void prePaintWindow(KWin::EffectWindow* w, KWin::WindowPrePaintData& data, int time);
 #if KWIN_EFFECT_API_VERSION >= 232
     void prePaintWindow(KWin::EffectWindow* w, KWin::WindowPrePaintData& data, std::chrono::milliseconds time);
 #else
@@ -59,7 +58,7 @@ private:
     KWin::GLTexture *m_rect[NTex];
     KWin::GLTexture *m_dark_rect[NTex];
     int m_size, m_rSize, m_alpha;
-    bool m_outline, m_dark_border, m_inverse_outline;
+    bool m_outline, m_dark_theme;
     QSize m_corner;
     QRegion m_updateRegion;
     KWin::GLShader *m_shader;
