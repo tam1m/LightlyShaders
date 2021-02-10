@@ -163,11 +163,10 @@ LightlyShadersEffect::genRect()
     p.setPen(Qt::NoPen);
     p.setRenderHint(QPainter::Antialiasing);
     r.adjust(1, 1, -1, -1);
-    if(m_dark_theme) {
+    if(m_dark_theme)
         p.setBrush(QColor(255, 255, 255, (m_alpha*2 < 255) ? m_alpha*2 : 255)) ;
-    } else {
+    else
         p.setBrush(QColor(255, 255, 255, m_alpha));
-    }
     p.drawEllipse(r);
     p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
     p.setBrush(Qt::black);
@@ -187,11 +186,10 @@ LightlyShadersEffect::genRect()
     p2.setPen(Qt::NoPen);
     p2.setRenderHint(QPainter::Antialiasing);
     r2.adjust(1, 1, -1, -1);
-    if(m_dark_theme) {
+    if(m_dark_theme) 
         p2.setBrush(QColor(0, 0, 0, 255));
-    } else {
-        p2.setBrush(QColor(0, 0, 0, (m_alpha*2 < 255) ? m_alpha*2 : 255));
-    }
+    else 
+        p2.setBrush(QColor(0, 0, 0, m_alpha));
     p2.drawEllipse(r2);
     p2.setCompositionMode(QPainter::CompositionMode_DestinationOut);
     p2.setBrush(Qt::black);
