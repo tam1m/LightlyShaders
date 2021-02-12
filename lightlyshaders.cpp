@@ -163,10 +163,7 @@ LightlyShadersEffect::genRect()
     p.setPen(Qt::NoPen);
     p.setRenderHint(QPainter::Antialiasing);
     r.adjust(1, 1, -1, -1);
-    if(m_dark_theme)
-        p.setBrush(QColor(255, 255, 255, (m_alpha*2 < 255) ? m_alpha*2 : 255)) ;
-    else
-        p.setBrush(QColor(255, 255, 255, m_alpha));
+    p.setBrush(QColor(255, 255, 255, m_alpha));
     p.drawEllipse(r);
     p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
     p.setBrush(Qt::black);
@@ -178,6 +175,8 @@ LightlyShadersEffect::genRect()
     m_rect[TopRight] = new KWin::GLTexture(img.copy(m_rSize, 0, m_rSize, m_rSize));
     m_rect[BottomRight] = new KWin::GLTexture(img.copy(m_rSize, m_rSize, m_rSize, m_rSize));
     m_rect[BottomLeft] = new KWin::GLTexture(img.copy(0, m_rSize, m_rSize, m_rSize));
+
+    m_rSize = m_size+2;
 
     QImage img2(m_rSize*2, m_rSize*2, QImage::Format_ARGB32_Premultiplied);
     img2.fill(Qt::transparent);
@@ -218,9 +217,9 @@ LightlyShadersEffect::reconfigure(ReconfigureFlags flags)
     Q_UNUSED(flags)
     KConfigGroup conf = KSharedConfig::openConfig("lightlyshaders.conf")->group("General");
     m_alpha = int(conf.readEntry("alpha", 15)*2.55);
-    setRoundness(conf.readEntry("roundness", 5));
     m_outline = conf.readEntry("outline", false);
     m_dark_theme = conf.readEntry("dark_theme", false);
+    setRoundness(conf.readEntry("roundness", 5));
 }
 
 void
@@ -360,6 +359,7 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
             modelViewProjection.ortho(0, s.width(), s.height(), 0, 0, 65535);
             modelViewProjection.translate(rrect[i].x(), rrect[i].y());
             shader->setUniform("modelViewProjectionMatrix", modelViewProjection);
+
             m_rect[i]->bind();
             m_rect[i]->render(region, rrect[i]);
             m_rect[i]->unbind();
