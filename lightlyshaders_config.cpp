@@ -38,14 +38,17 @@ public:
         , outline("outline")
         , alpha("alpha")
         , darkTheme("dark_theme")
+        , shadows("shadows")
         , defaultRoundness(5)
         , defaultOutline(false)
         , defaultAlpha(15)
         , defaultDarkTheme(false)
+        , defaultShadows(true)
+
     {}
     LightlyShadersConfig *q;
-    QString roundness, outline, alpha, darkTheme;
-    QVariant defaultRoundness, defaultOutline, defaultAlpha, defaultDarkTheme;
+    QString roundness, outline, alpha, darkTheme, shadows;
+    QVariant defaultRoundness, defaultOutline, defaultAlpha, defaultDarkTheme, defaultShadows;
     ConfigDialog *ui;
 };
 
@@ -72,6 +75,7 @@ LightlyShadersConfig::load()
     d->ui->outline->setChecked(conf.readEntry(d->outline, d->defaultOutline).toBool());
     d->ui->alpha->setValue(conf.readEntry(d->alpha, d->defaultAlpha).toInt());
     d->ui->darkTheme->setChecked(conf.readEntry(d->darkTheme, d->defaultDarkTheme).toBool());
+    d->ui->shadows->setChecked(conf.readEntry(d->shadows, d->defaultShadows).toBool());
     emit changed(false);
 }
 
@@ -84,6 +88,8 @@ LightlyShadersConfig::save()
     conf.writeEntry(d->outline, d->ui->outline->isChecked());
     conf.writeEntry(d->alpha, d->ui->alpha->value());
     conf.writeEntry(d->darkTheme, d->ui->darkTheme->isChecked());
+    conf.writeEntry(d->shadows, d->ui->shadows->isChecked());
+
     conf.sync();
     emit changed(false);
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
@@ -100,6 +106,7 @@ LightlyShadersConfig::defaults()
     d->ui->outline->setChecked(d->defaultOutline.toBool());
     d->ui->alpha->setValue(d->defaultAlpha.toInt());
     d->ui->darkTheme->setChecked(d->defaultDarkTheme.toBool());
+    d->ui->shadows->setChecked(d->defaultShadows.toBool());
     emit changed(true);
 }
 

@@ -220,6 +220,8 @@ LightlyShadersEffect::reconfigure(ReconfigureFlags flags)
     m_outline = conf.readEntry("outline", false);
     m_dark_theme = conf.readEntry("dark_theme", false);
     setRoundness(conf.readEntry("roundness", 5));
+    m_shadows = conf.readEntry("shadows", true);
+
 }
 
 void
@@ -295,8 +297,12 @@ LightlyShadersEffect::paintWindow(KWin::EffectWindow *w, int mask, QRegion regio
 
     const KWin::WindowQuadList qds(data.quads);
     //paint the shadow
-    data.quads = qds.select(KWin::WindowQuadShadow);
-    KWin::effects->paintWindow(w, mask, region, data);
+    if (m_shadows)
+    {
+        //shadows produce ugly edges..
+        data.quads = qds.select(KWin::WindowQuadShadow);
+        KWin::effects->paintWindow(w, mask, region, data);
+    }
 
     //copy the corner regions
     KWin::GLTexture tex[NTex];

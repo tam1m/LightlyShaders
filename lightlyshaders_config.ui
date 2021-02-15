@@ -49,6 +49,13 @@
        </item>
       </layout>
      </item>
+    <item>
+      <widget class="QCheckBox" name="shadows">
+       <property name="text">
+        <string>Enable Shadows (disable to fix ugly corners)</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QCheckBox" name="outline">
        <property name="text">
